@@ -5,6 +5,7 @@
 #include "Hittable.h"
 #include "Sphere.h"
 #include "HittableList.h"
+#include "Camera.h"
 
 Vec3 color(const Ray r, Hittable *world) {
 
@@ -23,7 +24,7 @@ Vec3 color(const Ray r, Hittable *world) {
 
 int main() {
 
-    std::ofstream out("c5_two_spheres.ppm");
+    std::ofstream out("c6_antialiasing.ppm");
     // Save old output buffer.
     std::streambuf *coutbuf = std::cout.rdbuf();
     // Redirect std::cout to output file.
@@ -31,25 +32,29 @@ int main() {
 
     int nx = 200;
     int ny = 100;
-
-    Vec3 origin(0, 0, 0);
-    Vec3 lowerLeft(-2, -1, -1);
-    Vec3 horizontal(4, 0, 0);
-    Vec3 vertical(0, 2, 0);
+    int ns = 1000;
 
     Hittable *list[2];
     list[0] = new Sphere(Vec3(0, 0, -1), 0.5);
     list[1] = new Sphere(Vec3(0, -100.5, -1), 100);
     Hittable *world = new HittableList(list, 2);
 
+    Camera cam;
+
     std::cout << "P3\n" << nx << " " << ny << "\n255\n";
     for (int j = ny - 1; j >= 0; j--) {
         for (int i = 0; i < nx; i++) {
 
-            float u = float(i) / float(nx);
-            float v = float(j) / float(ny);
-            Ray r(origin, lowerLeft + u * horizontal + v * vertical);
-            Vec3 col = color(r, world);
+            Vec3 col(0, 0, 0);
+            // Create ns random rays through each pixel and average their colors.
+            for (int s = 0; s < ns; s++) {
+                float u = float(i + drand48()) / float(nx);
+                float v = float(j + drand48()) / float(ny);
+                Ray r = cam.getRay(u, v);
+                Vec3 p = r.pointAtParameter(2.0);
+                col += color(r, world);
+            }
+            col /= float(ns);
 
             int ir = int(255.99 * col.r());
             int ig = int(255.99 * col.g());

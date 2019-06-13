@@ -3,4 +3,4 @@ project(RTInAWeekend)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(RTInAWeekend main.cpp Vec3.h Ray.h Hittable.h Sphere.h HittableList.h)
+add_executable(RTInAWeekend Main.cpp Vec3.h Ray.h Hittable.h Sphere.h HittableList.h Camera.h)
