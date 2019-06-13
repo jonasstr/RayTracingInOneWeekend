@@ -7,24 +7,37 @@
 #include "HittableList.h"
 #include "Camera.h"
 
+Vec3 randomPointInUnitSphere() {
+    Vec3 p;
+    do {
+        // Choose a random point.
+        p = 2 * Vec3(drand48()) - Vec3(1);
+        // Check whether the point is within the unit sphere.
+    } while (p.squared_length() >= 1.0);
+    return p;
+}
+
 Vec3 color(const Ray r, Hittable *world) {
 
     HitRecord rec;
-    if (world ->hit(r, 0.0, MAXFLOAT, rec)) {
-        // Map normal values to RGB.
-        return 0.5 * (rec.normal + 1);
+    if (world->hit(r, 0.001, MAXFLOAT, rec)) {
+        // Randomize the direction of p by moving a random amount starting from the normal.
+        Vec3 target = rec.p + rec.normal + randomPointInUnitSphere();
+        // Reflect again recursively starting from the new point.
+        return 0.5 * color(Ray(rec.p, target - rec.p), world);
+    } else {
+        // Between -1 and 1.
+        Vec3 dir = normalize(r.direction());
+        // 0 <= t <= 1.
+        float t = 0.5 * (dir.y() + 1);
+        // Interpolate between white and light blue.
+        return (1 - t) * Vec3(1, 1, 1) + t * Vec3(0.2, 0.5, 1);
     }
-    // Between -1 and 1.
-    Vec3 dir = normalize(r.direction());
-    // 0 <= t <= 1.
-    float t = 0.5 * (dir.y() + 1);
-    // Interpolate between white and light blue.
-    return (1 - t) * Vec3(1, 1, 1) + t * Vec3(0.2, 0.5, 1);
 }
 
 int main() {
 
-    std::ofstream out("c6_antialiasing.ppm");
+    std::ofstream out("c6_diffuse_material.ppm");
     // Save old output buffer.
     std::streambuf *coutbuf = std::cout.rdbuf();
     // Redirect std::cout to output file.
@@ -32,7 +45,7 @@ int main() {
 
     int nx = 200;
     int ny = 100;
-    int ns = 1000;
+    int ns = 100;
 
     Hittable *list[2];
     list[0] = new Sphere(Vec3(0, 0, -1), 0.5);
@@ -55,6 +68,8 @@ int main() {
                 col += color(r, world);
             }
             col /= float(ns);
+            // Apply gamma correction.
+            col = Vec3(sqrt(col.r()), sqrt(col.g()), sqrt(col.b()));
 
             int ir = int(255.99 * col.r());
             int ig = int(255.99 * col.g());

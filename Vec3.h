@@ -15,6 +15,12 @@ public:
         e[2] = e2;
     }
 
+    Vec3(float v) {
+        e[0] = v;
+        e[1] = v;
+        e[2] = v;
+    }
+
     inline float x() const { return e[0]; }
 
     inline float y() const { return e[1]; }
