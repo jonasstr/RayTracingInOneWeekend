@@ -2,19 +2,20 @@
 #define SPHERE_H
 
 #include "Hittable.h"
+#include <memory>
 
 class Sphere : public Hittable {
 
 public:
 
-    Sphere() = default;
-
-    Sphere(Vec3 center, float r) : center(center), radius(r) {};
+    Sphere(Vec3 center, float r, Material* material)
+            : center(center), radius(r), material(material) {};
 
     Vec3 center;
     float radius;
+    std::unique_ptr<Material> material;
 
-    bool hit(const Ray &r, float tMin, float tMax, HitRecord& rec) const {
+    bool hit(const Ray &r, float tMin, float tMax, HitRecord &rec) const {
 
         Vec3 oc = r.origin() - center;
         float a = dot(r.direction(), r.direction());
@@ -28,6 +29,7 @@ public:
                 rec.t = tmp1;
                 rec.p = r.pointAtParameter(rec.t);
                 rec.normal = (rec.p - center) / radius;
+                rec.matPtr = material.get();
                 return true;
             }
             const float tmp2 = (-b + sqrt(b * b - a * c)) / a;
@@ -35,6 +37,7 @@ public:
                 rec.t = tmp2;
                 rec.p = r.pointAtParameter(rec.t);
                 rec.normal = (rec.p - center) / radius;
+                rec.matPtr = material.get();
                 return true;
             }
         }

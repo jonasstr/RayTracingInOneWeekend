@@ -6,6 +6,9 @@
 class Ray {
 
 public:
+
+    Ray() {}
+
     Ray(Vec3 a, Vec3 b) {
         A = a;
         B = b;

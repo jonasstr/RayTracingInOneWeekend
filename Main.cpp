@@ -1,30 +1,28 @@
 #include <iostream>
 #include <fstream>
+
 #include "Vec3.h"
 #include "Ray.h"
 #include "Hittable.h"
+#include "Material.h"
 #include "Sphere.h"
 #include "HittableList.h"
 #include "Camera.h"
+#include "Lambertian.h"
+#include "Metal.h"
 
-Vec3 randomPointInUnitSphere() {
-    Vec3 p;
-    do {
-        // Choose a random point.
-        p = 2 * Vec3(drand48()) - Vec3(1);
-        // Check whether the point is within the unit sphere.
-    } while (p.squared_length() >= 1.0);
-    return p;
-}
-
-Vec3 color(const Ray r, Hittable *world) {
+Vec3 color(const Ray r, Hittable *world, int depth, const int maxDepth) {
 
     HitRecord rec;
     if (world->hit(r, 0.001, MAXFLOAT, rec)) {
-        // Randomize the direction of p by moving a random amount starting from the normal.
-        Vec3 target = rec.p + rec.normal + randomPointInUnitSphere();
-        // Reflect again recursively starting from the new point.
-        return 0.5 * color(Ray(rec.p, target - rec.p), world);
+        Ray scattered;
+        Vec3 attenuation;
+        if (depth < maxDepth && rec.matPtr->scatter(r, rec, attenuation, scattered)) {
+            return attenuation*color(scattered, world, depth+1, maxDepth);
+        } else {
+            // Black if max depth has been exceeded.
+            return {0, 0, 0};
+        }
     } else {
         // Between -1 and 1.
         Vec3 dir = normalize(r.direction());
@@ -37,7 +35,7 @@ Vec3 color(const Ray r, Hittable *world) {
 
 int main() {
 
-    std::ofstream out("c6_diffuse_material.ppm");
+    std::ofstream out("c8_metal_and_lambertian_fuzzy.ppm");
     // Save old output buffer.
     std::streambuf *coutbuf = std::cout.rdbuf();
     // Redirect std::cout to output file.
@@ -47,10 +45,12 @@ int main() {
     int ny = 100;
     int ns = 100;
 
-    Hittable *list[2];
-    list[0] = new Sphere(Vec3(0, 0, -1), 0.5);
-    list[1] = new Sphere(Vec3(0, -100.5, -1), 100);
-    Hittable *world = new HittableList(list, 2);
+    Hittable *list[4];
+    list[0] = new Sphere(Vec3(0, 0, -1), 0.5, new Lambertian(Vec3(0.8, 0.3, 0.3)));
+    list[1] = new Sphere(Vec3(0, -100.5, -1), 100, new Lambertian(Vec3(0.8, 0.8, 0.0)));
+    list[2] = new Sphere(Vec3(1, 0, -1), 0.5, new Metal(Vec3(0.8, 0.6, 0.2), 0.1));
+    list[3] = new Sphere(Vec3(-1, 0, -1), 0.5, new Metal(Vec3(0.8, 0.8, 0.8), 1.0));
+    Hittable *world = new HittableList(list, 4);
 
     Camera cam;
 
@@ -64,8 +64,7 @@ int main() {
                 float u = float(i + drand48()) / float(nx);
                 float v = float(j + drand48()) / float(ny);
                 Ray r = cam.getRay(u, v);
-                Vec3 p = r.pointAtParameter(2.0);
-                col += color(r, world);
+                col += color(r, world, 0, 50);
             }
             col /= float(ns);
             // Apply gamma correction.
