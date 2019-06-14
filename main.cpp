@@ -19,7 +19,7 @@ Vec3 color(const Ray r, Hittable *world, int depth, const int maxDepth) {
         Ray scattered;
         Vec3 attenuation;
         if (depth < maxDepth && rec.matPtr->scatter(r, rec, attenuation, scattered)) {
-            return attenuation*color(scattered, world, depth+1, maxDepth);
+            return attenuation * color(scattered, world, depth + 1, maxDepth);
         } else {
             // Black if max depth has been exceeded.
             return {0, 0, 0};
@@ -36,24 +36,29 @@ Vec3 color(const Ray r, Hittable *world, int depth, const int maxDepth) {
 
 int main() {
 
-    std::ofstream out("c8_metal_and_lambertian_fuzzy.ppm");
+    std::ofstream out("c11_larger_scene.ppm");
     // Save old output buffer.
     std::streambuf *coutbuf = std::cout.rdbuf();
     // Redirect std::cout to output file.
     std::cout.rdbuf(out.rdbuf());
 
-    int nx = 200;
-    int ny = 100;
-    int ns = 100;
+    int nx = 800;
+    int ny = 400;
+    int ns = 80;
 
     Hittable *list[4];
-    list[0] = new Sphere(Vec3(0, 0, -1), 0.5, new Lambertian(Vec3(0.8, 0.3, 0.3)));
-    list[1] = new Sphere(Vec3(0, -100.5, -1), 100, new Lambertian(Vec3(0.8, 0.8, 0.0)));
+    list[0] = new Sphere(Vec3(0, -100.5, -1), 100, new Lambertian(Vec3(0.8, 0.8, 0.0)));
+    list[1] = new Sphere(Vec3(0, 0, -1), 0.5, new Lambertian(Vec3(1.0, 0.15, 0.85)));
     list[2] = new Sphere(Vec3(1, 0, -1), 0.5, new Metal(Vec3(0.8, 0.6, 0.2), 0.1));
     list[3] = new Sphere(Vec3(-1, 0, -1), 0.5, new Dielectric(1.5));
     Hittable *world = new HittableList(list, 4);
 
-    Camera cam;
+    const Vec3 lookFrom = Vec3(-2, 2, 1);
+    const Vec3 lookAt = Vec3(0, 0, -1);
+    const float focusDist = (lookAt - lookFrom).length();
+    float aperture = 0.0;
+
+    Camera cam(lookFrom, lookAt, Vec3(0, 1, 0), 20, float(nx) / float(ny), aperture, focusDist);
 
     std::cout << "P3\n" << nx << " " << ny << "\n255\n";
     for (int j = ny - 1; j >= 0; j--) {
